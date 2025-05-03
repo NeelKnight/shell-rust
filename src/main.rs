@@ -11,6 +11,12 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
 
-        println!("{}: command not found", input.trim());
+        // !TODO try to reduce streaming vulnerabilites
+        let sanitised_input = input.trim();
+
+        match sanitised_input {
+            "exit 0" => break,
+            _ => println!("{}: command not found", sanitised_input),
+        }
     }
 }

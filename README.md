@@ -1,6 +1,6 @@
 [![progress-banner](https://backend.codecrafters.io/progress/shell/dad0a7a2-41e1-4156-ae50-4519ebe2fc87)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
 
-#🦀 rush – A POSIX-Compliant Shell in Rust
+# 🦀 rush – A POSIX-Compliant Shell in Rust
 
 This is my second ever Rust Project!
 
