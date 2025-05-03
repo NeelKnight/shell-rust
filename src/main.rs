@@ -14,6 +14,7 @@ fn main() {
         let sanitised_input = sanitise_input(&input);
 
         let mut parts = sanitised_input.split_whitespace();
+        let commands = vec!["type", "echo", "exit"];
 
         match parts.next() {
             Some("exit") => match parts.next() {
@@ -23,6 +24,16 @@ fn main() {
                 None => std::process::exit(1),
             },
             Some("echo") => println!("{}", parts.collect::<Vec<&str>>().join(" ")),
+            Some("type") => match parts.next() {
+                Some(command) => {
+                    if commands.contains(&command) {
+                        println!("{command} is a shell builtin")
+                    } else {
+                        println!("{command}: not found")
+                    }
+                }
+                None => continue,
+            },
             None => continue,
             _ => println!("{}: command not found", sanitised_input),
         }
