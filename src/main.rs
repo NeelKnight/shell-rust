@@ -1,7 +1,7 @@
 use std::io::{self, Write};
 
 fn main() {
-    println!("Welcome to the rush (RUst SHell)!");
+    //println!("Welcome to the rush (RUst SHell)!");
 
     loop {
         print!("$ ");
