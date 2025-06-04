@@ -1,7 +1,8 @@
 use std::{
     env, fs,
-    io::{self, Write},
+    io::{self, BufRead, BufReader, Write},
     path::PathBuf,
+    process::{Command, Stdio},
     vec,
 };
 
@@ -74,17 +75,17 @@ fn sanitise_input(input: &str) -> Option<String> {
     let trimmed = input.trim();
 
     // Dis-allow Control Characters to prevent weird shell effects!
-    if trimmed
-        .chars()
-        .any(|c| c.is_control() && !c.is_whitespace())
-    {
-        return None;
-    }
+    // if trimmed
+    //     .chars()
+    //     .any(|c| c.is_control() && !c.is_whitespace())
+    // {
+    //     return None;
+    // }
 
-    // Prevent Resoure exhaustion attacks
-    if trimmed.len() > 1024 {
-        return None;
-    }
+    // // Prevent Resoure exhaustion attacks
+    // if trimmed.len() > 1024 {
+    //     return None;
+    // }
 
     Some(trimmed.split_whitespace().collect::<Vec<_>>().join(" "))
 }
@@ -113,14 +114,34 @@ fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf
 }
 
 fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
-    let output = std::process::Command::new(command)
+    println!("{command} + {:?}", args);
+    let mut output = Command::new(command)
         .args(args)
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .output()?;
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
 
-    print!("{}", String::from_utf8_lossy(&output.stdout));
-    eprint!("{}", String::from_utf8_lossy(&output.stderr));
+    // Handle stdout
+    if let Some(stdout) = output.stdout.take() {
+        let stdout_reader = BufReader::new(stdout);
+        for line in stdout_reader.lines() {
+            println!("{}", line?);
+        }
+    }
+
+    // Handle stderr
+    if let Some(stderr) = output.stderr.take() {
+        let stderr_reader = BufReader::new(stderr);
+        for line in stderr_reader.lines() {
+            eprintln!("{}", line?);
+        }
+    }
+
+    // Wait for the command to finish
+    let status = output.wait()?;
+    if !status.success() {
+        eprintln!("Process exited with status: {}", status);
+    }
 
     Ok(())
 }
