@@ -30,9 +30,16 @@ fn main() {
             }
         };
 
-        let mut parts = sanitised_input.split_whitespace();
-        let command = parts.next();
-        let args: Vec<&str> = parts.collect();
+        let parts = match shell_words::split(&sanitised_input) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("Failed to parse input: {}", error);
+                continue;
+            }
+        };
+
+        let command = parts.get(0).map(|s| s.as_str());
+        let args: Vec<&str> = parts.iter().skip(1).map(|s| s.as_str()).collect();
 
         match command {
             Some("exit") => match args.get(0) {
@@ -75,17 +82,17 @@ fn sanitise_input(input: &str) -> Option<String> {
     let trimmed = input.trim();
 
     // Dis-allow Control Characters to prevent weird shell effects!
-    // if trimmed
-    //     .chars()
-    //     .any(|c| c.is_control() && !c.is_whitespace())
-    // {
-    //     return None;
-    // }
+    if trimmed
+        .chars()
+        .any(|c| c.is_control() && !c.is_whitespace())
+    {
+        return None;
+    }
 
-    // // Prevent Resoure exhaustion attacks
-    // if trimmed.len() > 1024 {
-    //     return None;
-    // }
+    // Prevent Resoure exhaustion attacks
+    if trimmed.len() > 1024 {
+        return None;
+    }
 
     Some(trimmed.split_whitespace().collect::<Vec<_>>().join(" "))
 }
@@ -114,7 +121,6 @@ fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf
 }
 
 fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
-    println!("{command} + {:?}", args);
     let mut output = Command::new(command)
         .args(args)
         .stdout(Stdio::piped())
