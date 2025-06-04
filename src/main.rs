@@ -57,10 +57,8 @@ fn main() {
             },
             None => continue,
             _ => {
-                if let Some(command_to_run) = args.get(0) {
-                    if let Some(_) = search_command_in_path(command_to_run, &path_directories) {
-                        execute_command(command_to_run, &args);
-                    }
+                if let Some(_) = search_command_in_path(command.unwrap_or(""), &path_directories) {
+                    execute_command(command.unwrap_or(""), &args);
                 } else {
                     println!("{}: command not found", sanitised_input);
                 }
@@ -95,13 +93,17 @@ fn fetch_path_dir(path: &str) -> Vec<&str> {
 
 fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf> {
     for dir in directories {
-        let entries = fs::read_dir(dir).ok()?;
+        if let Ok(dir_entries) = fs::read_dir(dir) {
+            for dir_entry in dir_entries.flatten() {
+                let filepath = dir_entry.path();
 
-        for entry in entries.flatten() {
-            let file = entry.path();
-
-            if file.file_name()?.to_str()? == command && file.is_file() {
-                return Some(file);
+                if filepath.is_file() {
+                    if let Some(filename) = filepath.file_name() {
+                        if filename == command {
+                            return Some(filepath);
+                        }
+                    }
+                }
             }
         }
     }
@@ -115,5 +117,4 @@ fn execute_command(command: &str, args: &[&str]) {
         .unwrap();
 
     let _status = process.wait().unwrap();
-    return;
 }
