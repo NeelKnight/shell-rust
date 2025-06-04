@@ -11,6 +11,8 @@ fn main() {
     let path = env::var("PATH").unwrap_or_default();
     let path_directories = fetch_path_dir(&path);
 
+    let built_in_commands = vec!["type", "echo", "exit"];
+
     loop {
         print!("$ ");
         io::stdout().flush().unwrap();
@@ -19,60 +21,99 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
 
         // !TODO try to reduce streaming vulnerabilites
-        let sanitised_input = sanitise_input(&input);
+        let sanitised_input = match sanitise_input(&input) {
+            Some(value) => value,
+            None => {
+                eprintln!("Attack Vector discovered! Input discarded as invalid!");
+                return;
+            }
+        };
 
-        let mut parts = sanitised_input.split_whitespace();
-        let built_in_commands = vec!["type", "echo", "exit"];
+        let mut parts = input.split_whitespace();
+        let command = parts.next();
+        let args: Vec<&str> = parts.collect();
 
-        match parts.next() {
-            Some("exit") => match parts.next() {
+        match command {
+            Some("exit") => match args.get(0) {
                 Some(code) => {
                     std::process::exit(code.parse::<i32>().unwrap_or(1));
                 }
                 None => std::process::exit(1),
             },
-            Some("echo") => println!("{}", parts.collect::<Vec<&str>>().join(" ")),
-            Some("type") => match parts.next() {
-                Some(command) => {
-                    if built_in_commands.contains(&command) {
-                        println!("{command} is a shell builtin")
+            Some("echo") => println!("{}", args.join(" ")),
+            Some("type") => match args.get(0) {
+                Some(command_provided) => {
+                    if built_in_commands.contains(&command_provided) {
+                        println!("{command_provided} is a shell builtin")
                     } else if let Some(filepath) =
-                        search_commands_in_path(command, &path_directories)
+                        search_command_in_path(command_provided, &path_directories)
                     {
-                        println!("{command} is {}", filepath.display());
+                        println!("{command_provided} is {}", filepath.display());
                     } else {
-                        println!("{command}: not found")
+                        println!("{command_provided}: not found")
                     }
                 }
                 None => continue,
             },
             None => continue,
-            _ => println!("{}: command not found", sanitised_input),
+            _ => {
+                if let Some(command_to_run) = args.get(0) {
+                    if let Some(_) = search_command_in_path(command_to_run, &path_directories) {
+                        execute_command(command_to_run, &args);
+                    }
+                } else {
+                    println!("{}: command not found", sanitised_input);
+                }
+            }
         }
     }
 }
 
-fn sanitise_input(input: &str) -> &str {
-    input.trim()
+// !TODO try to reduce streaming vulnerabilites
+fn sanitise_input(input: &str) -> Option<String> {
+    let trimmed = input.trim();
+
+    // Dis-allow Control Characters to prevent weird shell effects!
+    if trimmed
+        .chars()
+        .any(|c| c.is_control() && !c.is_whitespace())
+    {
+        return None;
+    }
+
+    // Prevent Resoure exhaustion attacks
+    if trimmed.len() > 1024 {
+        return None;
+    }
+
+    Some(trimmed.split_whitespace().collect::<Vec<_>>().join(" "))
 }
 
 fn fetch_path_dir(path: &str) -> Vec<&str> {
     return path.split(":").collect();
 }
 
-fn search_commands_in_path(command: &str, directories: &[&str]) -> Option<PathBuf> {
+fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf> {
     for dir in directories {
-        if let Ok(files) = fs::read_dir(dir) {
-            for file in files {
-                let Ok(file) = file else { continue };
+        let entries = fs::read_dir(dir).ok()?;
 
-                if let Some(file_name) = file.file_name().to_str() {
-                    if file_name == command {
-                        return Some(file.path());
-                    }
-                }
+        for entry in entries.flatten() {
+            let file = entry.path();
+
+            if file.file_name()?.to_str()? == command && file.is_file() {
+                return Some(file);
             }
         }
     }
     None
+}
+
+fn execute_command(command: &str, args: &[&str]) {
+    let mut process = std::process::Command::new(command)
+        .args(args)
+        .spawn()
+        .unwrap();
+
+    let _status = process.wait().unwrap();
+    return;
 }
