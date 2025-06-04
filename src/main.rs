@@ -29,7 +29,7 @@ fn main() {
             }
         };
 
-        let mut parts = input.split_whitespace();
+        let mut parts = sanitised_input.split_whitespace();
         let command = parts.next();
         let args: Vec<&str> = parts.collect();
 
@@ -55,14 +55,16 @@ fn main() {
                 }
                 None => continue,
             },
-            None => continue,
-            _ => {
-                if let Some(_) = search_command_in_path(command.unwrap_or(""), &path_directories) {
-                    execute_command(command.unwrap_or(""), &args);
+            Some(command) => {
+                if let Some(_) = search_command_in_path(command, &path_directories) {
+                    if let Err(e) = execute_command(command, &args) {
+                        eprintln!("Failed to execute command: {}", e);
+                    }
                 } else {
-                    println!("{}: command not found", sanitised_input);
+                    println!("{}: command not found", command);
                 }
             }
+            None => continue,
         }
     }
 }
@@ -110,11 +112,15 @@ fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf
     None
 }
 
-fn execute_command(command: &str, args: &[&str]) {
-    let mut process = std::process::Command::new(command)
+fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
+    let output = std::process::Command::new(command)
         .args(args)
-        .spawn()
-        .unwrap();
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .output()?;
 
-    let _status = process.wait().unwrap();
+    print!("{}", String::from_utf8_lossy(&output.stdout));
+    eprint!("{}", String::from_utf8_lossy(&output.stderr));
+
+    Ok(())
 }
