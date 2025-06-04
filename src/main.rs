@@ -1,8 +1,7 @@
 use std::{
     env, fs,
-    io::{self, BufRead, BufReader, Write},
+    io::{self, Write},
     path::PathBuf,
-    process::{Command, Stdio},
     vec,
 };
 
@@ -38,8 +37,13 @@ fn main() {
             }
         };
 
-        let command = parts.get(0).map(|s| s.as_str());
-        let args: Vec<&str> = parts.iter().skip(1).map(|s| s.as_str()).collect();
+        let (command, args) = match parts.split_first() {
+            Some((cmd, rest)) => (
+                Some(cmd.as_str()),
+                rest.iter().map(|s| s.as_str()).collect(),
+            ),
+            None => (None, Vec::new()),
+        };
 
         match command {
             Some("exit") => match args.get(0) {
@@ -121,33 +125,9 @@ fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf
 }
 
 fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
-    let mut output = Command::new(command)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
+    let mut process = std::process::Command::new(command).args(args).spawn()?;
 
-    // Handle stdout
-    if let Some(stdout) = output.stdout.take() {
-        let stdout_reader = BufReader::new(stdout);
-        for line in stdout_reader.lines() {
-            println!("{}", line?);
-        }
-    }
-
-    // Handle stderr
-    if let Some(stderr) = output.stderr.take() {
-        let stderr_reader = BufReader::new(stderr);
-        for line in stderr_reader.lines() {
-            eprintln!("{}", line?);
-        }
-    }
-
-    // Wait for the command to finish
-    let status = output.wait()?;
-    if !status.success() {
-        eprintln!("Process exited with status: {}", status);
-    }
+    let _status = process.wait()?;
 
     Ok(())
 }
