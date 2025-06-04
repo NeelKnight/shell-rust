@@ -1,4 +1,4 @@
-[![progress-banner](https://backend.codecrafters.io/progress/shell/dad0a7a2-41e1-4156-ae50-4519ebe2fc87)](https://app.codecrafters.io/users/codecrafters-bot?r=2qF)
+[![progress-banner](https://backend.codecrafters.io/progress/shell/dad0a7a2-41e1-4156-ae50-4519ebe2fc87)](https://app.codecrafters.io/users/NeelKnight)
 
 # 🦀 rush – A POSIX-Compliant Shell in Rust
 
