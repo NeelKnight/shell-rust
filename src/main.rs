@@ -74,7 +74,7 @@ fn main() {
                 let combined_dir_path = args.join(" ");
                 let to_dir = path::Path::new(&combined_dir_path);
                 if let Err(_) = env::set_current_dir(to_dir) {
-                    println!("cd: <{}>: No such file or directory", to_dir.display())
+                    println!("cd: {}: No such file or directory", to_dir.display())
                 }
             }
             Some(command) => {
