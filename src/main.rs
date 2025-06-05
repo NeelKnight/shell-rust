@@ -66,10 +66,10 @@ fn main() {
                 }
                 None => continue,
             },
-            // Some("pwd") => match env::current_dir() {
-            //     Ok(path) => println!("{}", path.display()),
-            //     Err(error) => println!("Failed to fetch directory : {error}!"),
-            // },
+            Some("pwd") => match env::current_dir() {
+                Ok(path) => println!("{}", path.display()),
+                Err(error) => println!("Failed to fetch directory : {error}!"),
+            },
             Some(command) => {
                 if let Some(_) = search_command_in_path(command, &path_directories) {
                     if let Err(e) = execute_command(command, &args) {
