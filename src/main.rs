@@ -1,7 +1,7 @@
 use std::{
     env, fs,
     io::{self, Write},
-    path::PathBuf,
+    path::{self, PathBuf},
 };
 
 fn main() {
@@ -10,7 +10,7 @@ fn main() {
     let path = env::var("PATH").unwrap_or_default();
     let path_directories = fetch_path_dir(&path);
 
-    const BUILT_IN_COMMANDS: [&str; 4] = ["type", "echo", "exit", "pwd"];
+    const BUILT_IN_COMMANDS: [&str; 5] = ["type", "echo", "exit", "pwd", "cd"];
 
     loop {
         print!("$ ");
@@ -70,6 +70,13 @@ fn main() {
                 Ok(path) => println!("{}", path.display()),
                 Err(error) => println!("Failed to fetch directory : {error}!"),
             },
+            Some("cd") => {
+                let combined_dir_path = args.join(" ");
+                let to_dir = path::Path::new(&combined_dir_path);
+                if let Err(_) = env::set_current_dir(to_dir) {
+                    println!("cd: <{}>: No such file or directory", to_dir.display())
+                }
+            }
             Some(command) => {
                 if let Some(_) = search_command_in_path(command, &path_directories) {
                     if let Err(e) = execute_command(command, &args) {
