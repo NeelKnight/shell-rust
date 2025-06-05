@@ -2,7 +2,6 @@ use std::{
     env, fs,
     io::{self, Write},
     path::PathBuf,
-    vec,
 };
 
 fn main() {
@@ -11,7 +10,7 @@ fn main() {
     let path = env::var("PATH").unwrap_or_default();
     let path_directories = fetch_path_dir(&path);
 
-    let built_in_commands = vec!["type", "echo", "exit"];
+    const BUILT_IN_COMMANDS: [&str; 4] = ["type", "echo", "exit", "pwd"];
 
     loop {
         print!("$ ");
@@ -40,7 +39,7 @@ fn main() {
         let (command, args) = match parts.split_first() {
             Some((cmd, rest)) => (
                 Some(cmd.as_str()),
-                rest.iter().map(|s| s.as_str()).collect(),
+                rest.iter().map(|rest_part| rest_part.as_str()).collect(),
             ),
             None => (None, Vec::new()),
         };
@@ -55,7 +54,7 @@ fn main() {
             Some("echo") => println!("{}", args.join(" ")),
             Some("type") => match args.get(0) {
                 Some(command_provided) => {
-                    if built_in_commands.contains(&command_provided) {
+                    if BUILT_IN_COMMANDS.contains(&command_provided) {
                         println!("{command_provided} is a shell builtin")
                     } else if let Some(filepath) =
                         search_command_in_path(command_provided, &path_directories)
@@ -67,6 +66,10 @@ fn main() {
                 }
                 None => continue,
             },
+            // Some("pwd") => match env::current_dir() {
+            //     Ok(path) => println!("{}", path.display()),
+            //     Err(error) => println!("Failed to fetch directory : {error}!"),
+            // },
             Some(command) => {
                 if let Some(_) = search_command_in_path(command, &path_directories) {
                     if let Err(e) = execute_command(command, &args) {
@@ -124,6 +127,7 @@ fn search_command_in_path(command: &str, directories: &[&str]) -> Option<PathBuf
     None
 }
 
+// Fine tune this and ensure proper error handling
 fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
     let mut process = std::process::Command::new(command).args(args).spawn()?;
 
