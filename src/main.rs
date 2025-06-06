@@ -1,3 +1,4 @@
+use dirs;
 use std::{
     env, fs,
     io::{self, Write},
@@ -23,15 +24,15 @@ fn main() {
         let sanitised_input = match sanitise_input(&input) {
             Some(value) => value,
             None => {
-                eprintln!("Attack Vector discovered! Input discarded as invalid!");
-                return;
+                println!("Attack Vector discovered! Input discarded as invalid!");
+                continue;
             }
         };
 
         let parts = match shell_words::split(&sanitised_input) {
             Ok(value) => value,
             Err(error) => {
-                eprintln!("Failed to parse input: {}", error);
+                println!("Failed to parse input: {}", error);
                 continue;
             }
         };
@@ -70,17 +71,40 @@ fn main() {
                 Ok(path) => println!("{}", path.display()),
                 Err(error) => println!("Failed to fetch directory : {error}!"),
             },
+            // !TODO Improve cd by adding '-' and ' ' support
             Some("cd") => {
                 let combined_dir_path = args.join(" ");
-                let to_dir = path::Path::new(&combined_dir_path);
-                if let Err(_) = env::set_current_dir(to_dir) {
-                    println!("cd: {}: No such file or directory", to_dir.display())
+
+                let to_dir = if combined_dir_path.starts_with("~") {
+                    if let Some(home_dir) = dirs::home_dir() {
+                        let mut path = home_dir;
+
+                        let suffix = combined_dir_path
+                            .trim_start_matches("~")
+                            .trim_start_matches("/");
+
+                        if !suffix.is_empty() {
+                            path.push(suffix);
+                        }
+                        Some(path)
+                    } else {
+                        println!("Home directory not set!");
+                        None
+                    }
+                } else {
+                    Some(path::PathBuf::from(&combined_dir_path))
+                };
+
+                if let Some(dir) = to_dir {
+                    if env::set_current_dir(&dir).is_err() {
+                        println!("cd: {}: No such file or directory", dir.display())
+                    }
                 }
             }
             Some(command) => {
                 if let Some(_) = search_command_in_path(command, &path_directories) {
                     if let Err(e) = execute_command(command, &args) {
-                        eprintln!("Failed to execute command: {}", e);
+                        println!("Failed to execute command: {}", e);
                     }
                 } else {
                     println!("{}: command not found", command);
