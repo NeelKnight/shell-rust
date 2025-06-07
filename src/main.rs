@@ -29,7 +29,7 @@ fn main() {
             }
         };
 
-        let parts = match shell_words::split(&sanitised_input) {
+        let parts = match shell_words::split(&input) {
             Ok(value) => value,
             Err(error) => {
                 println!("Failed to parse input: {}", error);
