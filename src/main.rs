@@ -21,7 +21,7 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
 
         // !TODO try to reduce streaming vulnerabilites
-        let sanitised_input = match sanitise_input(&input) {
+        let _sanitised_input = match sanitise_input(&input) {
             Some(value) => value,
             None => {
                 println!("Attack Vector discovered! Input discarded as invalid!");
