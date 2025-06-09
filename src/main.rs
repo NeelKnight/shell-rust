@@ -29,14 +29,6 @@ fn main() {
             }
         };
 
-        // let parts = match shell_words::split(&input) {
-        //     Ok(value) => value,
-        //     Err(error) => {
-        //         println!("Failed to parse input: {}", error);
-        //         continue;
-        //     }
-        // };
-
         let (command, args) = match sanitised_input.split_first() {
             Some((cmd, rest)) => (
                 Some(cmd.as_str()),
@@ -127,14 +119,17 @@ fn sanitise_input(input: &str) -> Option<Vec<String>> {
         return None;
     }
 
-    // Prevent Resoure exhaustion attacks
+    // Prevent Resource exhaustion attacks
     if trimmed.len() > 1024 {
         return None;
     }
 
     match shell_words::split(trimmed) {
         Ok(parts) => Some(parts),
-        Err(_) => None,
+        Err(error) => {
+            eprintln!("Input parsing failed due to mismatched-quotes: {error}");
+            None
+        }
     }
 }
 
