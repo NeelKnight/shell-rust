@@ -21,7 +21,7 @@ fn main() {
         io::stdin().read_line(&mut input).unwrap();
 
         // !TODO try to reduce streaming vulnerabilites
-        let _sanitised_input = match sanitise_input(&input) {
+        let sanitised_input = match sanitise_input(&input) {
             Some(value) => value,
             None => {
                 println!("Attack Vector discovered! Input discarded as invalid!");
@@ -29,15 +29,15 @@ fn main() {
             }
         };
 
-        let parts = match shell_words::split(&input) {
-            Ok(value) => value,
-            Err(error) => {
-                println!("Failed to parse input: {}", error);
-                continue;
-            }
-        };
+        // let parts = match shell_words::split(&input) {
+        //     Ok(value) => value,
+        //     Err(error) => {
+        //         println!("Failed to parse input: {}", error);
+        //         continue;
+        //     }
+        // };
 
-        let (command, args) = match parts.split_first() {
+        let (command, args) = match sanitised_input.split_first() {
             Some((cmd, rest)) => (
                 Some(cmd.as_str()),
                 rest.iter().map(|rest_part| rest_part.as_str()).collect(),
@@ -116,7 +116,7 @@ fn main() {
 }
 
 // !TODO try to reduce streaming vulnerabilites
-fn sanitise_input(input: &str) -> Option<String> {
+fn sanitise_input(input: &str) -> Option<Vec<String>> {
     let trimmed = input.trim();
 
     // Dis-allow Control Characters to prevent weird shell effects!
@@ -132,7 +132,10 @@ fn sanitise_input(input: &str) -> Option<String> {
         return None;
     }
 
-    Some(trimmed.split_whitespace().collect::<Vec<_>>().join(" "))
+    match shell_words::split(trimmed) {
+        Ok(parts) => Some(parts),
+        Err(_) => None,
+    }
 }
 
 fn fetch_path_dir(path: &str) -> Vec<&str> {
