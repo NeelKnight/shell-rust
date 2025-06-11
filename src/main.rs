@@ -164,3 +164,11 @@ fn execute_command(command: &str, args: &[&str]) -> io::Result<()> {
 
     Ok(())
 }
+
+// !TODO
+// try to reduce streaming vulnerabilites
+// Improve cd by adding '-' and ' ' support
+// Fine tune execute_command this and ensure proper error handling
+// Error reporting in red?
+// Backspace and navigation support
+// Pretty-print support?
