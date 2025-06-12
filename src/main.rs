@@ -5,6 +5,8 @@ use std::{
     path::{self, PathBuf},
 };
 
+// Start of add of command modularisation
+
 fn main() {
     //println!("Welcome to the rush (RUst SHell)!");
 
